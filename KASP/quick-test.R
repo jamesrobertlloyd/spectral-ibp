@@ -4,7 +4,7 @@ source('KASP-JL.R')
 
 # Create some synthetic data
 
-n <- 1000000
+n <- 10000
 m <- 10
 k <- 2
 noise <- 0.1
@@ -26,7 +26,8 @@ sigma <- 1
 alpha <- n / 10
 
 # Estimate A
-
+# determine posterior mean of A instead? sig.x = 1; sig.a = 1; 
+# first estimate will be the means: explicitly initialize with means?
 lm.hat <- lm(X ~ Z.hat[,2:dim(Z)[2]])
 A.hat <- lm.hat$coefficients
 A.hat[is.na(A.hat)] <- 0
