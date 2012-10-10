@@ -87,6 +87,7 @@ Cambridge University\\
 \def\Adjacency{W}
 \def\Degree{D}
 \def\Laplacian{L}
+\def\IBPPrior{\alpha}
 
 \DeclareMathOperator*{\argmin}{\arg\!\min}
 
@@ -103,7 +104,7 @@ Can we use spectral methods to get a fast model based on the IBP?
 Consider a simple linear Gaussian model of the form
 \begin{eqnarray}
 \Weights & \dist & \Normal\,(0, \sigma_\Weights^2 I) \\
-\IBP & \dist & \textrm{IBP} \\
+\IBP & \dist & \textrm{IBP}(\IBPPrior) \\
 \Data & \dist & \Normal\,(\IBP \Weights, \sigma_\Data^2 I).
 \end{eqnarray}
 Copying from \cite{Griffiths2011} we should be guided by terms such as
@@ -114,9 +115,9 @@ p\,(\Data | \IBP) & \propto & |\IBP\Transpose\IBP + \frac{\sigma_\Data^2}{\sigma
 For simplicity, we might initially consider simpler priors on $\IBP$ and or a maximum likelihood framework.
 \section{Spectral clustering notes}
 
-For a similarity matrix $\Graph$, with adjacency matrix $\Adjacency$ and degree diagonal matrix $\Degree$, the unnormalized graph Laplacian is defined as
+For a similarity matrix $\Graph$, with adjacency matrix $\Adjacency$ and diagonal degree matrix $\Degree$, the unnormalized graph Laplacian is defined as
 \begin{equation}
-\Laplacian = \Degree - \Weights
+\Laplacian = \Degree - \Adjacency
 \end{equation}
 has the following property \citep{Luxburg2007}
 \begin{eqnarray}
