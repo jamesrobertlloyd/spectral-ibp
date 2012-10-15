@@ -97,6 +97,7 @@ Cambridge University\\
 
 \begin{abstract}
 Can we use spectral methods to get a fast model based on the IBP?
+Or maybe approximation schemes developed for spectral clustering can be carried over to the IBP case?
 \end{abstract}
 
 \section{An IBP model}
@@ -140,6 +141,7 @@ Our objective can be stated as trying to minimise
 \end{equation}
 where $||.||$ is some distance metric on matrices (\ie the appropriate one to make this equivalent to maximum likelihood).
 
+\fTBD{I have implicitly assumed that $z_{ij} \in \{-1,1\}$ so that we can model bias terms etc A minor point but might be useful for some forms of identifiability}
 Let $\tilde X = \Data - \IBP_{-k}\Weights_{-k}$.
 For a given $\IBP_k$, the maximum likelihood estimation of $\Weights$ is equivalent to minimising
 \begin{equation}
@@ -180,6 +182,23 @@ In the maximum likelihood setting this is easy, the following algorithm can be j
 \item et cetera\ldots with looping, split merge equivalents and other nice things developed for samplers.
 \end{itemize}
 
+\section{Literature review}
+
+\TBD{Write notes here}
+
+\cite{Griffiths2011}
+\cite{Luxburg2007}
+\cite{Cui2007}
+\cite{Niu2010}
+\cite{Niu2011}
+\cite{Niu2012}
+
+\section{$k$-means clustering as a generic preprocessing step}
+
+I am currently using the approximate spectral clustering algorithm of \cite{Yan2009}.
+Is this a good idea?
+I will try to work out what is going on in this approximation.
+
 \section{Next steps / questions}
 \begin{itemize}
 \item Can we modify the above argument to be more Bayesian?
@@ -191,18 +210,12 @@ In the maximum likelihood setting this is easy, the following algorithm can be j
 
 \section{Some relevant literature}
 
-\cite{Griffiths2011}
-\cite{Luxburg2007}
-\cite{Cui2007}
-\cite{Niu2010}
-\cite{Niu2011}
-\cite{Niu2012}
-
 % Bibliography
 
 %\newpage
 \small{
 \bibliographystyle{assets/natbib}
+%\bibliographystyle{icml2013}
 \bibliography{library}
 }
 
