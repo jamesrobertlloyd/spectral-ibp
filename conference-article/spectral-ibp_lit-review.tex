@@ -1,0 +1,140 @@
+\documentclass{article}
+% Style file
+\usepackage{assets/nips12submit_e,times}
+% Basic packages
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amsthm, amssymb, bm}
+\usepackage{verbatim}
+% More fun stuff
+\usepackage{graphicx}%\graphicspath{{figures/}}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage[square,numbers]{natbib}
+%\usepackage[usenames]{color}
+\usepackage{mathrsfs}
+\usepackage[colorlinks,citecolor=blue,urlcolor=blue,linkcolor=blue]{hyperref}
+\usepackage{hypernat}
+\usepackage{datetime}
+\usepackage{textcomp}
+\usepackage{assets/picins}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric,arrows,chains,matrix,positioning,scopes,calc}
+\tikzstyle{mybox} = [draw=white, rectangle]
+\usepackage{booktabs}
+
+% Algorithms, and some standard modifications
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+\newcommand{\algrule}[1][.2pt]{\par\vskip.3\baselineskip\hrule height #1\par\vskip.3\baselineskip}
+
+\title{
+A spectral approximation to the Indian Buffet Process
+}
+
+\author{
+J Lloyd, Z Ghahramani, C Reed\\
+Department of Engineering\\
+Cambridge University\\
+%\texttt{jrl44@cam.ac.uk, FIX ME}
+%\And
+%Coauthor \\
+%Affiliation \\
+%Address \\
+%\texttt{email}
+}
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to \LaTeX{} to determine where to break
+% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
+% puts 3 of 4 authors names on the first line, and the last on the second
+% line, try using \AND instead of \And before the third author name.
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+
+\setlength{\marginparwidth}{1.25in}
+
+\input{assets/commenting.tex}
+
+%% For submission, make all render blank.
+%\renewcommand{\LATER}[1]{}
+%\renewcommand{\fLATER}[1]{}
+%\renewcommand{\TBD}[1]{}
+%\renewcommand{\fTBD}[1]{}
+%\renewcommand{\PROBLEM}[1]{}
+%\renewcommand{\fPROBLEM}[1]{}
+%\renewcommand{\NA}[1]{#1}  %% Note, NA's pass through!
+
+\input{assets/defs.tex}
+
+\nipsfinalcopy % Uncomment for camera-ready version
+
+\numberwithin{equation}{section}
+\numberwithin{thm}{section}
+
+% Document specific notation
+
+\DeclareMathOperator*{\argmin}{\arg\!\min}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Literature review of spectral clustering for maximum-likelihood IBP formulation.
+\end{abstract}
+
+\section{Paper Summaries}
+\subsection{Fast Approximate Spectral Clustering: \citet{yan2009fast}}
+\citet{yan2009fast} discuss fast approximate spectral clustering framework based on minimizing the distortion (misclustering) of the resulting clusters as compared to non-approximate spectral clustering. Specifically, they introduce a K-means and RP-trees preprocessing step that forms a set of representative points and then performs spectral clustering on the representative points. These algorithms are referred to as \textit{KASP} and \textit{RASP}, respectively. The complexity of KASP is $O(knt) + O(k^3)$ while RASP is $O(hn) + O(k^3)$, where $k$ is the number of representative points, $n$ is the number of data points, $t$ is the number of iterations of the preprocessing algorithms, and $h$ is the depth of the RP tree.
+
+\citet{yan2009fast} use a perturbation analysis of the graph Laplacian to show that the misclustering of (K|R)ASP converges to 0 as the number of representative points increases. Furthermore, they show that their techniques perform much better than K-means and comparable to a Nystr\"om approximation but with smaller memory requirements and runtime.
+
+
+\subsection{Non-redundant Multi-view Clustering via Orthogonalization: \citet{Cui2007}}
+\citet{Cui2007} propose general methods for forming multiple clustering solutions for a given dataset, where each clustering is in a different subspace. Their method operates iteratively by clustering the data, orthogonalizing the data to a new subspace that is not covered by the previous clusters, clustering the data in the new subspace, et cetera until reaching some form of convergence.  The authors discuss two approaches to performing this clustering: orthogonal clustering and clustering in orthogonal spaces.
+
+\textit{Orthogonal clustering}: given current data $X^{(t)}$ and the clustering solution of $X^{(t)}$, $M^{(t)} = [\mu_1^{(t)} \mu_2^{(2)} \cdots \mu_k^{(t)}]$, \citet{Cui2007} view orthogonal clustering as projecting the data points from the original data space to a compressed space (subspace) spanned by the mean vectors. They describe two variations for performing clustering in the space that is orthogonal to the compressed data space based on the hard and soft clustering views:
+\begin{itemize}
+\item hard clustering: each data point $x_i^{(t)}$ belonging to cluster $j$ is projected onto the cluster center $\mu_j^{(t)}$ and $x_i^{(t+1)}$ is determined as $x_i^{(t)}$ projected onto the subspace orthogonal to the cluster centroids:
+$$
+x_i^{(t+1)} = (I - \mu_j^{(t)}\mu_j^{(t)T}/\mu_j^{(t)T}\mu_j^{(t)})x_i^{(t)}
+$$
+%
+\item soft clustering: since each data point can partially belong to each cluster, we can project $X^{(t)}$ onto all cluster means and compute $X^{(t+1)}$ as $X^{(t)}$ projected onto the subspace orthogonal to all the cluster centroids:
+$$
+X^{(t+1)} = (I-M^{(t)}(M^{(t)T}M^{(t)})^{-1}M^{(t)T}X^{(t)} 
+$$
+\end{itemize}
+%
+
+\textit{Clustering in orthogonal subspaces}: \citet{Cui2007} view clustering in orthogonal spaces as projecting the data into a reduced dimensional space that discriminates the given classes: i.e.\ via latent discriminant analysis or PCA. In particular, given current data $X^{(t)}$ and the clustering solution of $X^{(t)}$, $M^{(t)} = [\mu_1^{(t)} \mu_2^{(2)} \cdots \mu_k^{(t)}]$, the authors find the PCA solution of $M^{(t)}$, keep the $k^{(t)}-1$ eigenvectors to obtain the subspace $A^{(t)}$ that captures the current clustering, and then projects $X^{(t)}$ to the space orthogonal to $A^{(t)}$:
+$$
+X^{(t+1)} = (I-A^{(t)}(A^{(t)T}A^{(t)})^{-1}A^{(t)T}X^{(t)} 
+$$
+\section{Literature to Investigate}
+
+\cite{Griffiths2011}
+\cite{Luxburg2007}
+\cite{Cui2007}
+\cite{Niu2010}
+\cite{Niu2011}
+\cite{Niu2012}
+\cite{Higham2004}
+\cite{yan2009fast}
+
+% Bibliography
+
+%\newpage
+\small{
+\bibliographystyle{assets/natbib}
+\bibliography{library}
+}
+
+\end{document}

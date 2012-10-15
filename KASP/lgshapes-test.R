@@ -27,7 +27,7 @@ gen.data <- function(N, K=4, D=36, Zprob = 0.5, sigX=0.1){
   # plot.A(A)
   # select the latent features for each datum
   Z = matrix(runif(N*K) > Zprob, nrow=N)
-  
+
   # generate the data
   gen.norm <- function(mean, sd, n=1){ rnorm(n, mean, sd) }
   means = Z %*% A
@@ -49,11 +49,11 @@ source('KASP-JL.R')
 
 # initialization
 trainF = 4/5
-model = gen.data(N=1000*1/trainF, sigX=1.0)
+model = gen.data(N=10000*1/trainF, sigX=1.0)
 trN = ceiling(model$N*4/5)
 X = model$X[1:trN,]
 Xtest = model$X[(trN + 1):model$N,]
-params = list(K.init=4, sigX=1.0, sigA=1.0, n.iter=20, kasp.sig=1.0, kasp.alpha=trN/11)
+params = list(K.init=6, sigX=1.0, sigA=1.0, n.iter=25, kasp.sig=1.0, kasp.alpha=trN/10)
 Z.hat = cbind(rep(1, trN), matrix(0, trN, params$K.init - 1))
 A.hat = map.A(X, Z.hat, params$sigX, params$sigA) 
 X.hat = Z.hat %*% A.hat
@@ -68,6 +68,9 @@ dev.A = as.integer(dev.cur())
 x11()
 par(mfrow=c(1,1))
 dev.llhood = as.integer(dev.cur())
+x11()
+par(mfrow=c(1,1))
+dev.Z = as.integer(dev.cur())
 
 # latent feature assignment iterations
 for(itn in 1:params$n.iter){
@@ -81,6 +84,8 @@ for(itn in 1:params$n.iter){
     # display updated latent features
     dev.set(dev.A)
     plot.A(A.hat)
+    dev.set(dev.Z)
+    image(t(Z.hat))
     
     # likelihood calculations/display
     llh = calc.llhood(X, Z.hat, Kval, params$sigX, params$sigA)
