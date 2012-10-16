@@ -98,7 +98,7 @@ Literature review of spectral clustering for maximum-likelihood IBP formulation.
 
 
 \subsection{Non-redundant Multi-view Clustering via Orthogonalization: \citet{Cui2007}}
-\citet{Cui2007} propose general methods for forming multiple clustering solutions for a given dataset, where each clustering is in a different subspace. Their method operates iteratively by clustering the data, orthogonalizing the data to a new subspace that is not covered by the previous clusters, clustering the data in the new subspace, et cetera until reaching some form of convergence.  The authors discuss two approaches to performing this clustering: orthogonal clustering and clustering in orthogonal spaces.
+\citet{Cui2007} propose general methods for forming multiple clustering solutions for a given dataset, where each clustering is in a different subspace. Their method operates iteratively by clustering the data using k-means, orthogonalizing the data to a new subspace that is not covered by the previous clusters, clustering the data in the new subspace, et cetera until reaching some form of convergence.  The authors discuss two approaches to performing this clustering: orthogonal clustering and clustering in orthogonal spaces.
 
 \textit{Orthogonal clustering}: given current data $X^{(t)}$ and the clustering solution of $X^{(t)}$, $M^{(t)} = [\mu_1^{(t)} \mu_2^{(2)} \cdots \mu_k^{(t)}]$, \citet{Cui2007} view orthogonal clustering as projecting the data points from the original data space to a compressed space (subspace) spanned by the mean vectors. They describe two variations for performing clustering in the space that is orthogonal to the compressed data space based on the hard and soft clustering views:
 \begin{itemize}
@@ -118,17 +118,70 @@ $$
 $$
 X^{(t+1)} = (I-A^{(t)}(A^{(t)T}A^{(t)})^{-1}A^{(t)T}X^{(t)} 
 $$
+
+\textit{Key observations}: \citet{Cui2007} used k-means for clustering and is therefore limited to convex clusters.v
+
+\subsection{Multiple Non-Redundant Spectral Clustering Views: \citet{Niu2010}}
+Notation summary
+\begin{itemize}
+\item $G$: $G=\{V,E\}$ is the graph used to define the $NCut$ formulation of spectral clustering
+\item $K$: similarity matrix with elements $k_{ij}$ measure the similarity between vertices $i$ and $j$ in $G$
+\item $P_i$: partition/cluster $i$
+\item $d_i$: degree of vertex $i$ with $d_i = \sum_{j=1}^n k_{ij}$
+\item $U$: indicator matrix: assigns vertex (row) to cluster (c) --- takes real values in relaxed spectral clustering formalism
+\item $n$: number of elements
+\item $c$: number of clusters
+\item $W_q$: $\mathbb{R}^{d\times l_q}$ transformation matrix for each view that transforms the data in the original space to the lower-dimensional space
+\item $m$: number of subspaces (number of multiple clustering solutions)
+\item $q$: indexes the subspaces
+\item $x$: the input data
+\end{itemize}
+
+The central idea of this work was to determine multiple non-redundant spectral clustering views by learning non-redundant subspaces and performing spectral clustering in these subspaces. Specifically, this was accomplished by using the NCut spectral clustering formulation over a similarity graph $G=\{V,E\}$ with disjoint partitions $P_1, \ldots, P_c$, and similarity matrix $K$:
+$$
+NCut(P_1, \ldots, P_c) = \sum_{t=1}^c \frac{cut(P_t, V\\P_t}{vol(P_t)},
+$$
+where
+$$
+cut(\mathcal{A}, \mathcal{B}) = \sum_{v_i \in \mathcal{A}, v_j \in \mathcal{B}} k_{ij},
+$$
+and degree $d_i = \sum_{j=1}^n k_{ij}$ so that $vol(\mathcal{A}) = \sum_{i \in \mathcal{A}} d_i$.
+By introducing the indicator matrix $U$ and allowing this matrix to take on values in $[0,1]$ (a relaxation of the original discrete optimization problem), cluster assignment optimization reduces to the well-known trace-maximization problem:
+\begin{align*}
+& \text{max}_{U \in \mathbb{R}^{n \times c}} ~\text{tr}(U^TD^{-1/2}KD^{-1/2}U)\\
+& \text{s.t. } U^TU = 1
+\end{align*}
+
+\citet{Niu2010} use the kernel similarity matrix $K_q$ computed with the kernel function $k(W^T_q x_i, W^T_q x_j)$ where $W_q \in \mathbb{R}^{d\times l_q}$ transforms the original data to subspace $q$, where $q \in \{1, \ldots, m\}$. The trick used by the authors is to introduce a penalty (regularization term) for redundant kernel spaces via the Hilbert-Schmidt Independence Criterion, so that our optimization problem becomes:
+\begin{align*}
+& \text{max}_{U_1, \ldots, U_m, W_1, \ldots, W_m}  ~\text{tr}(U_q^TD_q^{-1/2}K_qD_q^{-1/2}U_q) - \lambda \sum_{q \neq r} \text{HSIC}(W_q^Tx, W_r^Tx)\\
+& \text{s.t. } U_q^TU_q = 1 \\
+& (K_q)_{ij} = k_q(W_q^Tx_i,W_q^Tx_j) \\ 
+& W_q^TW_q = I
+\end{align*}
+which is optimized in two steps:
+\begin{enumerate}
+\item Assume all $W_q$ fixed, optimize $U_q$ in each view (perform spectral clustering in the given subspace---simple)
+\item Assume all $U_q$ fixed, optimize $W_q$ in each view ---- used gradient ascent on the Stiefel manifold\footnote{Colorado does not understand this optimization technique}
+\end{enumerate}
+
+Finally, initialization is important in this algorithm. The authors initialize the $W_q$ matrices by performing spectral clustering with a similarity matrix $A$ that measures similarity between the original features of the dataset using HSIC and then clusters the features into $m$ clusters ($m$ is a parameter). Then for each feature assigned to cluster $q$, append a $d \times 1$ column to $W_q$ with all entries 0 except the $j^{th}$ element which is set to 1. This effectively creates $m$ subspaces where each subspace clusters on a disjoint subset of the features. However, the final learned $W_q$ can have features with weights in many views.
+
+
+
+
 \section{Literature to Investigate}
-
-\cite{Griffiths2011}
-\cite{Luxburg2007}
-\cite{Cui2007}
-\cite{Niu2010}
-\cite{Niu2011}
-\cite{Niu2012}
-\cite{Higham2004}
-\cite{yan2009fast}
-
+\begin{itemize}
+\item \citet{Griffiths2011}
+\item \citet{Luxburg2007}
+\item \citet{Cui2007}
+\item \citet{Niu2010}
+\item \citet{Niu2011}
+\item \citet{Niu2012}
+\item \citet{Higham2004}
+\item \citet{yan2009fast}
+\item \citet{jain2008simultaneous}
+\end{itemize}
 % Bibliography
 
 %\newpage
