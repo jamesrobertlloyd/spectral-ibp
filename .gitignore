@@ -22,3 +22,6 @@
 *.out
 *.synctex.gz
 .Rproj.user
+conference-article/spectral-ibp.pdf
+*.DS_Store
+*~
