@@ -36,7 +36,7 @@ A spectral approximation to the Indian Buffet Process
 }
 
 \author{
-James Robert Lloyd, Zoubin Ghahramani\\
+James Robert Lloyd, Colorado Reed, Zoubin Ghahramani\\
 Department of Engineering\\
 Cambridge University\\
 %\texttt{jrl44@cam.ac.uk, FIX ME}
@@ -114,11 +114,12 @@ p\,(\Data | \IBP, \Weights) & \propto & \exp\,(-\textrm{tr}((\Data - \IBP\Weight
 p\,(\Data | \IBP) & \propto & |\IBP\Transpose\IBP + \frac{\sigma_\Data^2}{\sigma_\Weights^2}I|^{D/2} \exp\,(-\textrm{tr}(\Data\Transpose(I - \IBP(\IBP\Transpose\IBP + \frac{\sigma_\Data^2}{\sigma_\Weights^2}I)^{-1}\IBP\Transpose)\Data)).
 \end{eqnarray}
 For simplicity, we might initially consider simpler priors on $\IBP$ and or a maximum likelihood framework.
+
 \section{Spectral clustering notes}
 
 For a similarity matrix $\Graph$, with adjacency matrix $\Adjacency$ and diagonal degree matrix $\Degree$, the unnormalized graph Laplacian is defined as
 \begin{equation}
-\Laplacian = \Degree - \Adjacency
+\Laplacian = \Degree - \Adjacency.
 \end{equation}
 has the following property \citep{Luxburg2007}
 \begin{eqnarray}
@@ -126,10 +127,24 @@ f' \Laplacian f = \frac{1}{2}\sum w_{ij}(f_i - f_j)^2
 \end{eqnarray}
 and the multiplicity of the zero eigenvalue of $\Laplacian$ is equal to the number of connected components in $\Graph$.
 
-Spectral clustering is approximately solving the min cut problem for the weighted adjacency matrix \ie
+Define a vector $f$ as follows
 \begin{equation}
-\argmin_{\IBP_1} = W(\IBP_1, \bar{\IBP_1}) := \sum_{i \in \IBP_1, j \in \bar{\IBP_1}}w_{ij}
+f_i =
+\begin{cases}
+\sqrt{|\bar\IBP_1|/|\IBP_1|} & \textrm{if } i \in \IBP_1\\
+-\sqrt{|\IBP_1|/|\bar\IBP_1|} & \textrm{if } i \in \bar\IBP_1\\
+\end{cases}.
 \end{equation}
+Then we have
+\begin{eqnarray}
+f' \Laplacian f & = & \frac{1}{2}\Bigg(\sum_{i\in \IBP_1 j \in \bar\IBP_1} w_{ij} + \sum_{i\in \bar\IBP_1 j \in \IBP_1} w_{ij}\Bigg) \Bigg(\sqrt{\frac{|\bar\IBP_1|}{|\IBP_1}|} + \sqrt{\frac{|\IBP_1|}{|\bar\IBP_1|}}\Bigg)^2 \\
+& = & \textrm{Cut}(\IBP_1, \bar\IBP_1)\Bigg(\frac{|\bar\IBP_1|}{|\IBP_1|} + \frac{|\IBP_1|}{|\bar\IBP_1|} + 2\Bigg) \\
+& = & \textrm{Cut}(\IBP_1, \bar\IBP_1)\Bigg(\frac{|\bar\IBP_1| + |\IBP_1|}{|\IBP_1|} + \frac{|\IBP_1| + |\bar\IBP_1|}{|\bar\IBP_1|}\Bigg) \\
+& = & \textrm{RatioCut}(\IBP_1, \bar\IBP_1) \times |\Graph|.
+\end{eqnarray}
+
+Additionally, $\sum f_i = 0$, and $||f||^2 = |\Graph|$.
+To complete the link one then appeals to the Rayleigh--Ritz theorem to reveal that the solution to the relaxed problem is the second eigenvalue.
 
 \section{Relations between the two}
 
@@ -181,6 +196,15 @@ In the maximum likelihood setting this is easy, the following algorithm can be j
 \item Obtain a new clustering, $\IBP_{3}$, by applying spectral clustering to $\Data - \IBP_{1:2}\Weights_{1:2}$. This is a sort of iterative conditional maximisation algorithm
 \item et cetera\ldots with looping, split merge equivalents and other nice things developed for samplers.
 \end{itemize}
+
+\section{Can we modify the spectral clustering algorithm}
+
+Can we include Bayesian regularisation terms into the objective?
+Can we make it more similar to maximum likelihood?
+How can we introduce a prior on the partitions?
+
+Many parts of the proof that spectral clustering does what it claims are highly intertwined.
+On the surface, it looks like it will be difficult to 
 
 \section{Literature review}
 

@@ -23,5 +23,6 @@
 *.synctex.gz
 .Rproj.user
 conference-article/spectral-ibp.pdf
+conference-article/spectral-ibp_lit-review.pdf
 *.DS_Store
 *~
