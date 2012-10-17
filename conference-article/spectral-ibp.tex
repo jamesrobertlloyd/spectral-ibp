@@ -82,12 +82,19 @@ Cambridge University\\
 
 \def\IBP{Z}
 \def\Weights{A}
+\def\weights{a}
 \def\Data{X}
+\def\data{x}
+\def\Residuals{\tilde{X}}
+\def\residuals{\tilde{x}}
 \def\Graph{G}
 \def\Adjacency{W}
 \def\Degree{D}
 \def\Laplacian{L}
 \def\IBPPrior{\alpha}
+\def\errors{\epsilon}
+\def\bias{b}
+\def\centre{\beta}
 
 \DeclareMathOperator*{\argmin}{\arg\!\min}
 
@@ -99,6 +106,109 @@ Cambridge University\\
 Can we use spectral methods to get a fast model based on the IBP?
 Or maybe approximation schemes developed for spectral clustering can be carried over to the IBP case?
 \end{abstract}
+
+\section{Maximum a posteriori approximated by spectral clustering}
+
+\subsection{MAP preliminaries}
+
+Start with a model of the form
+\begin{equation}
+\Data_{ij} = (\IBP\Weights)_{ij} + \bias_{j} + \errors_{ij}
+\end{equation}
+where $\IBP$ is a binary matrix (possibly with elements in $\{-1,+1\}$), $\Weights$ is real valued weight matrix, $\bias$ is a bias vector and $\epsilon$ is a matrix of `errors'.
+We will define priors as we go.
+
+Consider a fairly general independent element prior on the errors with density
+\begin{equation}
+p(\errors_{ij}) \propto \exp(-|\errors_{ij}|_\psi)
+\end{equation}
+where $|.|_1$ is some norm with parameters $\psi$ which in turn may have a prior placed upon them.
+
+The log posterior in this model (ignoring dependence on $\psi$ for the moment) can be written as
+\begin{equation}
+\log(p(\IBP)) + \log(p(\Weights)) + \log(p(\bias)) - \sum_{ij}|\Data_{ij} - (\IBP\Weights)_{ij} - \bias_j|_\psi.
+\end{equation}
+Assuming the prior on $\Weights$ factorises, then the relevant terms for maximising $\Weights_{k:}$ and $\bias$ keeping everything else fixed are
+\begin{equation}
+\log(p(\Weights_{k:}) + \log(p(\bias)) - \sum_{ij} |\Residuals^k_{ij} - \IBP_{ik}\Weights_{kj} - \bias_j|_\psi
+\end{equation}
+where we have defined the residuals matrix $\Residuals^k_{ij} = \sum_{m \neq k}\IBP_{im}\Weights_{mj}$.
+
+For initial simplicity, let us assume uniform priors on the log scale (\ie the slightly risky `scale free' priors) for the weights and bias and write their MAP estimators as $\hat{\Weights}_{k:}$ and $\hat{\bias}^k$. We then define MAP centres as
+\begin{eqnarray}
+\centre^k & = & \hat{\Weights}_{k:} + \hat{\bias}^k \\
+\bar{\centre}^k & = & \hat{\bias}^k
+\end{eqnarray}
+
+\subsection{An approximate min cut objective}
+
+We now consider jointly maximising the posterior likelihood over $\Weights_{k:}$, $\bias$ and $\IBP_{:k}$.
+We achieve this by considering an objective which is a function of $\IBP_{:k}$ and show that it bounds the original MAP objective.
+
+\TBD{This encoding of the MAP objective into affinities is currently quite simple. Revisiting this might allow us to do more clever things, such as altering the effective priors on the weights and bias.}
+
+Consider minimising
+\begin{equation}
+\sum_i||\Residuals^k_{i:} - \IBP_{ik}\hat{\Weights}_{k:} - \hat{\bias}^k||_\psi
+\end{equation}
+where $||.||_\psi$ is an appropriate sum of norms. We can rewrite this as
+\begin{equation}
+\sum_{i: \IBP_{ik} = 1}||\Residuals^k_{i:} - \centre^k||_\psi + \sum_{i: \IBP_{ik} = 0}||\Residuals^k_{i:} - \bar{\centre}^k||_\psi.
+\end{equation}
+By the triangle inequality\fTBD{this is why we used a norm} we have
+\begin{equation}
+\sum_{ij: \IBP_{ik},\IBP_{jk} = 1}||\Residuals^k_{i:} - \Residuals^k_{j:}||_\psi \leq 2|\{\IBP_{:k} = 1\}|\sum_{i: \IBP_{ik} = 1}||\Residuals^k_{i:} - \centre^k||_\psi
+\end{equation}
+and by the definition of $\centre^k$ (still assuming scale free priors) we have
+\begin{equation}
+|\{\IBP_{:k} = 1\}|\sum_{i: \IBP_{ik} = 1}||\Residuals^k_{i:} - \centre^k||_\psi \leq \sum_{ij: \IBP_{ik},\IBP_{jk} = 1}||\Residuals^k_{i:} - \Residuals^k_{j:}||_\psi.
+\end{equation}
+Thus, it would not be unrelated to consider minimising
+\begin{equation}
+\sum_{ij: \IBP_{ik},\IBP_{jk} = 1}||\Residuals^k_{i:} - \Residuals^k_{j:}||_\psi + \sum_{ij: \IBP_{ik},\IBP_{jk} = 0}||\Residuals^k_{i:} - \Residuals^k_{j:}||_\psi
+\end{equation}
+which is equivalent to minimising
+\begin{equation}
+\sum_{ij: \IBP_{ik} = 1, \IBP_{jk} = 0}-||\Residuals^k_{i:} - \Residuals^k_{j:}||_\psi 
+\end{equation}
+which is a min cut problem with adjacency weights defined as $w_{ij} = -||\Residuals^k_{i:} - \Residuals^k_{j:}||_\psi$.
+\TBD{Notice that all weights are negative. We could have added a constant to prevent this but this will affect the effective prior which will be saved for a separate section. Min cut is still defined in this setting (it is a finite problem) but standard exact algorithms stop working. I hope the relaxation is still valid, but we need to watch out!}
+\subsection{The effective prior on $\IBP$ using spectral clustering}
+Consider a generic `scaled' Laplacian of the form
+\begin{equation}
+\Laplacian = E^{-1/2}(\Degree - \Adjacency)E^{-1/2}
+\end{equation}
+for some diagonal matrix $E$. For $E = \Degree$ this is a common normalised Laplacian.
+Standard spectral clustering arguments show\fTBD{write this down sometime} that the following optimisation problem
+\begin{equation}
+\textrm{min } f'\Laplacian f : \sum f_i = 0, ||f|| = 1
+\end{equation}
+is a relaxation of minimising
+\begin{equation}
+\frac{\sum_{ij: \IBP_{ik} = 1, \IBP_{jk} = 0}w_{ij}}{\sum_{i: \IBP_{ik} = 1}e_i} +  \frac{\sum_{ij: \IBP_{ik} = 1, \IBP_{jk} = 0}w_{ij}}{{\sum_{i: \IBP_{ik} = 0}e_i}}.
+\end{equation}
+For $E = I$ the denominators become the sizes of the clusters \ie ratio cut.
+For $E = D$ we get volumes of clusters \ie NCut.
+
+This means our effective prior on $\IBP$ is
+\begin{equation}
+\log(p(\IBP_{:k})) = \sum_{ij: \IBP_{ik} \textrm{ XOR } \IBP_{jk}}w_{ij}\Big(\frac{1}{\sum_{i: \IBP_{ik} = 1}e_i} + \frac{1}{\sum_{i: \IBP_{ik} = 0}e_i} - 1)
+\end{equation}
+which is data dependent!
+\NA{Could we potentially modify the data likelihood?}
+
+This problem would be `fixed' if we had a noise distribution of the form
+\begin{equation}
+p(\errors) \propto \sum_{ij} f(\errors_{ij})
+\end{equation}
+but this is beginning to look weird and I might have to be careful about signs and the partition function could probably no longer be ignored.
+\NA{This is starting to look strange / unhelpful / I have low confidence in what I am writing.}
+
+\section{Random thoughts}
+
+Can we choose very different weights to fix things \eg log weights?
+Could we also just run $k$-means on the residuals directly?
+What is being spectral gaining over $k$-means?
 
 \section{An IBP model}
 
