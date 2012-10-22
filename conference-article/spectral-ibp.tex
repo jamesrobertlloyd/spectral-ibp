@@ -32,7 +32,7 @@
 \newcommand{\algrule}[1][.2pt]{\par\vskip.3\baselineskip\hrule height #1\par\vskip.3\baselineskip}
 
 \title{
-A spectral approximation to the Indian Buffet Process
+$k$-means, Infinite Latent Feature Models and Multiple Clustering
 }
 
 \author{
@@ -103,11 +103,54 @@ Cambridge University\\
 \maketitle
 
 \begin{abstract}
-Can we use spectral methods to get a fast model based on the IBP?
-Or maybe approximation schemes developed for spectral clustering can be carried over to the IBP case?
+We demonstrate that $k$-means based multiple clustering models can be viewed as limiting MAP inference in probabilistic models.
+The probabilistic model is an approximation to a nonparametric model, and better $k$-means algorithms are developed by approximating more advanced models.
+This extends recent work on links between infinite Gaussian mixtures and $k$-means by producing a multi-view clustering algorithm.
 \end{abstract}
 
+\section{Introduction}
+
+Traditional clusterings \citep[e.g.][]{Jain2000} produce one solution.
+However, data is usually more interesting and multi-faceted.
+
+The Indian Buffet Process (IBP) is a nonparametric Bayesian prior over binary matrices \citep[e.g.][]{Griffiths2011}.
+These priors are typically used to assign a latent binary sequence to data points which can be interpreted as membership in multiple binary clusterings of the data.
+We show that the maximum likelihood solution to a parametric version of this model is equivalent to a $k$-means algorithm for multiple clustering already in the literature \citep{Cui2007}.
+By drawing a parallel with the probabilistic model and considering MAP inference we construct a regularised \citep[e.g.][]{Sun2012} and `nonparametric' modification to the $k$-means algorithm that retains efficiency.
+
+We then extend this approximation approach to a more sophisticated Bayesian nonparametric model for multiple clustering \citep{Niu2012}.
+This model automatically performs feature selection for each view, selects the number of views and the number of clusters in each view.
+We again show how a limiting form of this algorithm can be approximately solved using $k$-means.
+In particular, we combine feature selection methodologies of \citep{Dy2004}, with the `nonparametric' $k$-means algorithm of \cite{Kulis2012} to produce an efficient approximation to the model of \cite{Niu2012}.
+\TBD{In this model, sharing of features happens through IBP 'stickiness' in the two parameter version.
+We could also try an additive version.
+Which would be better?}
+
+We hope that our two approximations will show how richly structured non-parametric models can in general be approximated.
+One should probably compare to \eg variational inference in these models.
+The scaling could potentially be a lot better though.
+
+\section{Literature review}
+
+\TBD{Write notes here and add more literature}
+
+\cite{Griffiths2011}
+\cite{Luxburg2007}
+\cite{Cui2007}
+\cite{Niu2010}
+\cite{Niu2011}
+\cite{Niu2012}
+\cite{Qi2009}
+\cite{Davidson2008}
+\cite{Jain2008}
+
 \section{Binary linear Gaussian model and $k$-means}
+
+\subsection{Note}
+
+This correspondence is well known but is usually stated as a correspondence between EM inference in a mixture of Gaussians model and $k$-means.
+This argument should probably come first, and it will make the extension to multiple (\ie not binary) clusters more clear.
+However, this matrix multiplication view might be of passing interest (the notation can certainly be reduced).
 
 \subsection{MAP preliminaries}
 
@@ -160,213 +203,21 @@ Performing $k$-means on this problem would now be very similar to \cite{Cui2007}
 Placing Gaussian or similar priors on the weights and bias would lead to a regularised $k$-means in the MAP setting.
 Relevant literature might be \cite{Sun2012}.
 
-\section{Maximum a posteriori approximated by spectral clustering}
+We could also place a Poisson prior over the number of different clusterings to infer an appropriate number of clusters.
+We might also want some sort of IBP like term to decide if we should add a cluster.
 
-\subsection{An approximate min cut objective}
+\subsection{Not just binary matrices}
 
-We now consider jointly maximising the posterior likelihood over $\Weights_{k:}$, $\bias$ and $\IBP_{:k}$.
-We achieve this by considering an objective which is a function of $\IBP_{:k}$ and show that it bounds the original MAP objective.
+The binary matrix produces binary clusterings for each view.
+From a clustering point of view, it is simple to see how one can extend to multiple clusterings.
 
-\TBD{This encoding of the MAP objective into affinities is currently quite simple. Revisiting this might allow us to do more clever things, such as altering the effective priors on the weights and bias.}
+\section{Approximating a more sophisticated multiple clustering model}
 
-Consider minimising
-\begin{equation}
-\sum_i||\Residuals^k_{i:} - \IBP_{ik}\hat{\Weights}_{k:} - \hat{\bias}^k||_\psi
-\end{equation}
-where $||.||_\psi$ is an appropriate sum of norms. We can rewrite this as
-\begin{equation}
-\sum_{i: \IBP_{ik} = 1}||\Residuals^k_{i:} - \centre^k||_\psi + \sum_{i: \IBP_{ik} = 0}||\Residuals^k_{i:} - \bar{\centre}^k||_\psi.
-\end{equation}
-By the triangle inequality\fTBD{this is why we used a norm} we have
-\begin{equation}
-\sum_{ij: \IBP_{ik},\IBP_{jk} = 1}||\Residuals^k_{i:} - \Residuals^k_{j:}||_\psi \leq 2|\{\IBP_{:k} = 1\}|\sum_{i: \IBP_{ik} = 1}||\Residuals^k_{i:} - \centre^k||_\psi
-\end{equation}
-and by the definition of $\centre^k$ (still assuming scale free priors) we have
-\begin{equation}
-|\{\IBP_{:k} = 1\}|\sum_{i: \IBP_{ik} = 1}||\Residuals^k_{i:} - \centre^k||_\psi \leq \sum_{ij: \IBP_{ik},\IBP_{jk} = 1}||\Residuals^k_{i:} - \Residuals^k_{j:}||_\psi.
-\end{equation}
-Thus, it would not be unrelated to consider minimising
-\begin{equation}
-\sum_{ij: \IBP_{ik},\IBP_{jk} = 1}||\Residuals^k_{i:} - \Residuals^k_{j:}||_\psi + \sum_{ij: \IBP_{ik},\IBP_{jk} = 0}||\Residuals^k_{i:} - \Residuals^k_{j:}||_\psi
-\end{equation}
-which is equivalent to minimising
-\begin{equation}
-\sum_{ij: \IBP_{ik} = 1, \IBP_{jk} = 0}-||\Residuals^k_{i:} - \Residuals^k_{j:}||_\psi 
-\end{equation}
-which is a min cut problem with adjacency weights defined as $w_{ij} = -||\Residuals^k_{i:} - \Residuals^k_{j:}||_\psi$.
-\TBD{Notice that all weights are negative. We could have added a constant to prevent this but this will affect the effective prior which will be saved for a separate section. Min cut is still defined in this setting (it is a finite problem) but standard exact algorithms stop working. I hope the relaxation is still valid, but we need to watch out!}
-\subsection{The effective prior on $\IBP$ using spectral clustering}
-Consider a generic `scaled' Laplacian of the form
-\begin{equation}
-\Laplacian = E^{-1/2}(\Degree - \Adjacency)E^{-1/2}
-\end{equation}
-for some diagonal matrix $E$. For $E = \Degree$ this is a common normalised Laplacian.
-Standard spectral clustering arguments show\fTBD{write this down sometime} that the following optimisation problem
-\begin{equation}
-\textrm{min } f'\Laplacian f : \sum f_i = 0, ||f|| = 1
-\end{equation}
-is a relaxation of minimising
-\begin{equation}
-\frac{\sum_{ij: \IBP_{ik} = 1, \IBP_{jk} = 0}w_{ij}}{\sum_{i: \IBP_{ik} = 1}e_i} +  \frac{\sum_{ij: \IBP_{ik} = 1, \IBP_{jk} = 0}w_{ij}}{{\sum_{i: \IBP_{ik} = 0}e_i}}.
-\end{equation}
-For $E = I$ the denominators become the sizes of the clusters \ie ratio cut.
-For $E = D$ we get volumes of clusters \ie NCut.
-
-This means our effective prior on $\IBP$ is
-\begin{equation}
-\log(p(\IBP_{:k})) = \sum_{ij: \IBP_{ik} \textrm{ XOR } \IBP_{jk}}w_{ij}\Big(\frac{1}{\sum_{i: \IBP_{ik} = 1}e_i} + \frac{1}{\sum_{i: \IBP_{ik} = 0}e_i} - 1)
-\end{equation}
-which is data dependent!
-\NA{Could we potentially modify the data likelihood?}
-
-This problem would be `fixed' if we had a noise distribution of the form
-\begin{equation}
-p(\errors) \propto \sum_{ij} f(\errors_{ij})
-\end{equation}
-but this is beginning to look weird and I might have to be careful about signs and the partition function could probably no longer be ignored.
-\NA{This is starting to look strange / unhelpful / I have low confidence in what I am writing.}
-
-\section{Random thoughts}
-
-Can we choose very different weights to fix things \eg log weights?
-Could we also just run $k$-means on the residuals directly?
-What is being spectral gaining over $k$-means?
-
-\section{An IBP model}
-
-Consider a simple linear Gaussian model of the form
-\begin{eqnarray}
-\Weights & \dist & \Normal\,(0, \sigma_\Weights^2 I) \\
-\IBP & \dist & \textrm{IBP}(\IBPPrior) \\
-\Data & \dist & \Normal\,(\IBP \Weights, \sigma_\Data^2 I).
-\end{eqnarray}
-Copying from \cite{Griffiths2011} we should be guided by terms such as
-\begin{eqnarray}
-p\,(\Data | \IBP, \Weights) & \propto & \exp\,(-\textrm{tr}((\Data - \IBP\Weights)\Transpose(\Data - \IBP\Weights))) \\
-p\,(\Data | \IBP) & \propto & |\IBP\Transpose\IBP + \frac{\sigma_\Data^2}{\sigma_\Weights^2}I|^{D/2} \exp\,(-\textrm{tr}(\Data\Transpose(I - \IBP(\IBP\Transpose\IBP + \frac{\sigma_\Data^2}{\sigma_\Weights^2}I)^{-1}\IBP\Transpose)\Data)).
-\end{eqnarray}
-For simplicity, we might initially consider simpler priors on $\IBP$ and or a maximum likelihood framework.
-
-\section{Spectral clustering notes}
-
-For a similarity matrix $\Graph$, with adjacency matrix $\Adjacency$ and diagonal degree matrix $\Degree$, the unnormalized graph Laplacian is defined as
-\begin{equation}
-\Laplacian = \Degree - \Adjacency.
-\end{equation}
-has the following property \citep{Luxburg2007}
-\begin{eqnarray}
-f' \Laplacian f = \frac{1}{2}\sum w_{ij}(f_i - f_j)^2
-\end{eqnarray}
-and the multiplicity of the zero eigenvalue of $\Laplacian$ is equal to the number of connected components in $\Graph$.
-
-Define a vector $f$ as follows
-\begin{equation}
-f_i =
-\begin{cases}
-\sqrt{|\bar\IBP_1|/|\IBP_1|} & \textrm{if } i \in \IBP_1\\
--\sqrt{|\IBP_1|/|\bar\IBP_1|} & \textrm{if } i \in \bar\IBP_1\\
-\end{cases}.
-\end{equation}
-Then we have
-\begin{eqnarray}
-f' \Laplacian f & = & \frac{1}{2}\Bigg(\sum_{i\in \IBP_1 j \in \bar\IBP_1} w_{ij} + \sum_{i\in \bar\IBP_1 j \in \IBP_1} w_{ij}\Bigg) \Bigg(\sqrt{\frac{|\bar\IBP_1|}{|\IBP_1}|} + \sqrt{\frac{|\IBP_1|}{|\bar\IBP_1|}}\Bigg)^2 \\
-& = & \textrm{Cut}(\IBP_1, \bar\IBP_1)\Bigg(\frac{|\bar\IBP_1|}{|\IBP_1|} + \frac{|\IBP_1|}{|\bar\IBP_1|} + 2\Bigg) \\
-& = & \textrm{Cut}(\IBP_1, \bar\IBP_1)\Bigg(\frac{|\bar\IBP_1| + |\IBP_1|}{|\IBP_1|} + \frac{|\IBP_1| + |\bar\IBP_1|}{|\bar\IBP_1|}\Bigg) \\
-& = & \textrm{RatioCut}(\IBP_1, \bar\IBP_1) \times |\Graph|.
-\end{eqnarray}
-
-Additionally, $\sum f_i = 0$, and $||f||^2 = |\Graph|$.
-To complete the link one then appeals to the Rayleigh--Ritz theorem to reveal that the solution to the relaxed problem is the second eigenvalue.
-
-\section{Relations between the two}
-
-Suppose we are trying to estimate $\Weights$ and $\IBP$ by maximum likelihood.
-In particular, consider estimating the $k$th column of $\IBP$ and the corresponding row of $\Weights$ keeping all other parameters fixed.
-Our objective can be stated as trying to minimise
-\begin{equation}
-||\Data - \IBP_{-k}\Weights_{-k} - \IBP_{k}\Weights_{k}||
-\end{equation}
-where $||.||$ is some distance metric on matrices (\ie the appropriate one to make this equivalent to maximum likelihood).
-
-\fTBD{I have implicitly assumed that $z_{ij} \in \{-1,1\}$ so that we can model bias terms etc A minor point but might be useful for some forms of identifiability}
-Let $\tilde X = \Data - \IBP_{-k}\Weights_{-k}$.
-For a given $\IBP_k$, the maximum likelihood estimation of $\Weights$ is equivalent to minimising
-\begin{equation}
-\sum_{i \in \IBP_k}|\tilde x_i - \beta_k| + \sum_{i \in \bar\IBP_k}|\tilde x_i - \bar\beta_k|
-\end{equation}
-over $\beta_k$ and $\bar\beta_k$.
-We can now create a link to spectral clustering.
-
-Consider the following constant
-\begin{eqnarray}
-C & = & \sum_{i,j}|\tilde x_i - \tilde x_j| \\
-  & = & \sum_{i,j \in \IBP_k}|\tilde x_i - \tilde x_j| + \sum_{i,j \in \bar\IBP_k}|\tilde x_i - \tilde x_j| + 2\sum_{i \in \IBP_k, j \in \bar\IBP_k}|\tilde x_i - \tilde x_j|
-\end{eqnarray}
-and then consider maximising $\sum_{i \in \IBP_1, j \in \bar\IBP_1}|\tilde x_i - \tilde x_j|$ over $\IBP_k$.
-This can be recast as minimising quantities of the form $\sum_{i \in \IBP_k, j \in \bar\IBP_k}(1 - \alpha|\tilde x_i - \tilde x_j|)$ for any $\alpha > 0$.
-For small enough $\alpha$ all summands will be positive and this can be phrased as a min cut problem \ie approximate spectral clustering.
-
-Thus, spectral clustering is approximately equivalent to minimising $\sum_{i,j \in \IBP_k}|\tilde x_i - \tilde x_j| + \sum_{i,j \in \bar\IBP_k}|\tilde x_i - \tilde x_j|$.
-
-Let $\hat\beta_k = \argmin_\beta \sum_{i \in \IBP_k}|\tilde x_i - \beta|$. Using this definition and the triangle inequality, we get the following
-\begin{equation}
-|\IBP_k|\sum_{i \in \IBP_1}|\tilde x_i - \hat\beta| \leq \sum_{i,j \in \IBP_1}|\tilde x_i - \tilde x_j| \leq 2|\IBP_k|\sum_{i \in \IBP_1}|\tilde x_i - \hat\beta_k|.
-\end{equation}
-\ie we can show that min cut is optimising a bound on the maximum likelihood objective.
-
-The bound is only tight when the problem is degenerate \ie this is not yet a guarantee, just a heuristic.
-The tightness of these bounds could be demonstrated in a probabilistic sense by assuming the data was generated by a linear binary model.
-
-\section{A natural iterative algorithm}
-
-In the maximum likelihood setting this is easy, the following algorithm can be justified using the arguments above.
-\begin{itemize}
-\item Find a binary clustering, $\IBP_1$, using spectral clustering applied to \Data
-\item Fit maximum likelihood parameters to yield $\hat\Weights_1$
-\item Obtain a new clustering, $\IBP_2$, by applying spectral clustering to $\Data - \IBP_1\Weights_1$. This is a sort of iterative conditional maximisation algorithm
-\item Fit maximum likelihood parameters to yield $\hat\Weights_{1:2}$
-\item Obtain a new clustering, $\IBP_{3}$, by applying spectral clustering to $\Data - \IBP_{1:2}\Weights_{1:2}$. This is a sort of iterative conditional maximisation algorithm
-\item et cetera\ldots with looping, split merge equivalents and other nice things developed for samplers.
-\end{itemize}
-
-\section{Can we modify the spectral clustering algorithm}
-
-Can we include Bayesian regularisation terms into the objective?
-Can we make it more similar to maximum likelihood?
-How can we introduce a prior on the partitions?
-
-Many parts of the proof that spectral clustering does what it claims are highly intertwined.
-On the surface, it looks like it will be difficult to 
-
-\section{Literature review}
-
-\TBD{Write notes here}
-
-\cite{Griffiths2011}
-\cite{Luxburg2007}
-\cite{Cui2007}
-\cite{Niu2010}
-\cite{Niu2011}
-\cite{Niu2012}
-\cite{Qi2009}
-\cite{Davidson2008}
-
-\section{$k$-means clustering as a generic preprocessing step}
-
-I am currently using the approximate spectral clustering algorithm of \cite{Yan2009}.
-Is this a good idea?
-I will try to work out what is going on in this approximation.
-
-\section{Next steps / questions}
-\begin{itemize}
-\item Can we modify the above argument to be more Bayesian?
-\item In doing so, can we look into the min cut / spectral clustering approximation to find an appropriate graph Laplacian?
-\item How different is this to orthogonal projections \citep{Cui2007}?
-\item Try it? Choosing sensible parameters for the spectral clustering will not be entirely easy.
-\item Can I make a guarantee about improving the marginal likelihood? Possibly not?
-\end{itemize}
-
-\section{Some relevant literature}
+\citep{Niu2012} introduces a nice Bayesian nonparametric model for multi-view clustering.
+Different clusterings are achieved by the IBP stickiness parameter.
+We could do this.
+We could also do this via an orthogonal projections type method.
+This could actually win in terms of accuracy (orthogonal projections pretty good despite not performing feature selection).
 
 % Bibliography
 
