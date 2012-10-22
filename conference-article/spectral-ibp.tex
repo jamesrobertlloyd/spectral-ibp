@@ -107,7 +107,7 @@ Can we use spectral methods to get a fast model based on the IBP?
 Or maybe approximation schemes developed for spectral clustering can be carried over to the IBP case?
 \end{abstract}
 
-\section{Maximum a posteriori approximated by spectral clustering}
+\section{Binary linear Gaussian model and $k$-means}
 
 \subsection{MAP preliminaries}
 
@@ -115,14 +115,14 @@ Start with a model of the form
 \begin{equation}
 \Data_{ij} = (\IBP\Weights)_{ij} + \bias_{j} + \errors_{ij}
 \end{equation}
-where $\IBP$ is a binary matrix (possibly with elements in $\{-1,+1\}$), $\Weights$ is real valued weight matrix, $\bias$ is a bias vector and $\epsilon$ is a matrix of `errors'.
+where $\IBP$ is a binary matrix, $\Weights$ is real valued weight matrix, $\bias$ is a bias vector and $\epsilon$ is a matrix of `errors'.
 We will define priors as we go.
 
 Consider a fairly general independent element prior on the errors with density
 \begin{equation}
 p(\errors_{ij}) \propto \exp(-|\errors_{ij}|_\psi)
 \end{equation}
-where $|.|_1$ is some norm with parameters $\psi$ which in turn may have a prior placed upon them.
+where $|.|_{\psi}$ is some norm with parameters $\psi$ which in turn may have a prior placed upon them.
 
 The log posterior in this model (ignoring dependence on $\psi$ for the moment) can be written as
 \begin{equation}
@@ -130,15 +130,37 @@ The log posterior in this model (ignoring dependence on $\psi$ for the moment) c
 \end{equation}
 Assuming the prior on $\Weights$ factorises, then the relevant terms for maximising $\Weights_{k:}$ and $\bias$ keeping everything else fixed are
 \begin{equation}
-\log(p(\Weights_{k:}) + \log(p(\bias)) - \sum_{ij} |\Residuals^k_{ij} - \IBP_{ik}\Weights_{kj} - \bias_j|_\psi
+\log(p(\Weights_{k:})) + \log(p(\bias)) - \sum_{ij} |\Residuals^k_{ij} - \IBP_{ik}\Weights_{kj} - \bias_j|_\psi
 \end{equation}
 where we have defined the residuals matrix $\Residuals^k_{ij} = \sum_{m \neq k}\IBP_{im}\Weights_{mj}$.
 
-For initial simplicity, let us assume uniform priors on the log scale (\ie the slightly risky `scale free' priors) for the weights and bias and write their MAP estimators as $\hat{\Weights}_{k:}$ and $\hat{\bias}^k$. We then define MAP centres as
+For initial simplicity, let us assume uniform priors on the log scale (\ie the risky `scale free' priors) for the weights and bias and write their MAP estimators as $\hat{\Weights}_{k:}$ and $\hat{\bias}^k$. We then define MAP centres as
 \begin{eqnarray}
 \centre^k & = & \hat{\Weights}_{k:} + \hat{\bias}^k \\
-\bar{\centre}^k & = & \hat{\bias}^k
+\bar{\centre}^k & = & \hat{\bias}^k.
 \end{eqnarray}
+
+\subsection{Equivalence to $k$-means}
+
+We now consider jointly maximising the posterior likelihood over $\Weights_{k:}$, $\bias$ and $\IBP_{:k}$.
+
+Consider minimising
+\begin{equation}
+\sum_i||\Residuals^k_{i:} - \IBP_{ik}\hat{\Weights}_{k:} - \hat{\bias}^k||_\psi
+\end{equation}
+where $||.||_\psi$ is an appropriate sum of norms. We can rewrite the objective as
+\begin{equation}
+\sum_{i: \IBP_{ik} = 1}||\Residuals^k_{i:} - \centre^k||_\psi + \sum_{i: \IBP_{ik} = 0}||\Residuals^k_{i:} - \bar{\centre}^k||_\psi.
+\end{equation}
+This is exactly the $k$-means objective for two clusters.
+Performing $k$-means on this problem would now be very similar to \cite{Cui2007}.
+
+\subsection{Making it more Bayesian}
+
+Placing Gaussian or similar priors on the weights and bias would lead to a regularised $k$-means in the MAP setting.
+Relevant literature might be \cite{Sun2012}.
+
+\section{Maximum a posteriori approximated by spectral clustering}
 
 \subsection{An approximate min cut objective}
 
@@ -326,6 +348,8 @@ On the surface, it looks like it will be difficult to
 \cite{Niu2010}
 \cite{Niu2011}
 \cite{Niu2012}
+\cite{Qi2009}
+\cite{Davidson2008}
 
 \section{$k$-means clustering as a generic preprocessing step}
 
