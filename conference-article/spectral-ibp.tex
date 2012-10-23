@@ -32,7 +32,7 @@
 \newcommand{\algrule}[1][.2pt]{\par\vskip.3\baselineskip\hrule height #1\par\vskip.3\baselineskip}
 
 \title{
-$k$-means, Infinite Latent Feature Models and Multiple Clustering
+$k$-means, Infinite Latent Feature Models\\ and Multiple Clustering
 }
 
 \author{
@@ -94,7 +94,7 @@ Cambridge University\\
 \def\IBPPrior{\alpha}
 \def\errors{\epsilon}
 \def\bias{b}
-\def\centre{\beta}
+\def\centre{\mu}
 
 \DeclareMathOperator*{\argmin}{\arg\!\min}
 
@@ -103,18 +103,22 @@ Cambridge University\\
 \maketitle
 
 \begin{abstract}
-We demonstrate that $k$-means based multiple clustering models can be viewed as limiting MAP inference in probabilistic models.
+PLACEHOLDER
+
+We demonstrate that $k$-means based multiple clustering models can be viewed as MAP inference in probabilistic models.
 The probabilistic model is an approximation to a nonparametric model, and better $k$-means algorithms are developed by approximating more advanced models.
-This extends recent work on links between infinite Gaussian mixtures and $k$-means by producing a multi-view clustering algorithm.
+This also extends recent work on links between infinite Gaussian mixtures and $k$-means by producing a multi-view clustering algorithm.
 \end{abstract}
 
 \section{Introduction}
 
+\PROBLEM{Placeholder}
+
 Traditional clusterings \citep[e.g.][]{Jain2000} produce one solution.
 However, data is usually more interesting and multi-faceted.
 
-The Indian Buffet Process (IBP) is a nonparametric Bayesian prior over binary matrices \citep[e.g.][]{Griffiths2011}.
-These priors are typically used to assign a latent binary sequence to data points which can be interpreted as membership in multiple binary clusterings of the data.
+The Indian Buffet Process (IBP) is a distribution over infinite binary matrices \citep[e.g.][]{Griffiths2011}.
+The IBP is often used as a prior that assigns a latent binary sequence to data points which can be interpreted as membership in multiple binary clusterings of the data.
 We show that the maximum likelihood solution to a parametric version of this model is equivalent to a $k$-means algorithm for multiple clustering already in the literature \citep{Cui2007}.
 By drawing a parallel with the probabilistic model and considering MAP inference we construct a regularised \citep[e.g.][]{Sun2012} and `nonparametric' modification to the $k$-means algorithm that retains efficiency.
 
@@ -122,7 +126,7 @@ We then extend this approximation approach to a more sophisticated Bayesian nonp
 This model automatically performs feature selection for each view, selects the number of views and the number of clusters in each view.
 We again show how a limiting form of this algorithm can be approximately solved using $k$-means.
 In particular, we combine feature selection methodologies of \citep{Dy2004}, with the `nonparametric' $k$-means algorithm of \cite{Kulis2012} to produce an efficient approximation to the model of \cite{Niu2012}.
-\TBD{In this model, sharing of features happens through IBP 'stickiness' in the two parameter version.
+\TBD{In this model, sharing of features happens through IBP `stickiness' in the two parameter version.
 We could also try an additive version.
 Which would be better?}
 
@@ -130,94 +134,96 @@ We hope that our two approximations will show how richly structured non-parametr
 One should probably compare to \eg variational inference in these models.
 The scaling could potentially be a lot better though.
 
-\section{Literature review}
+\section{Related work}
 
-\TBD{Write notes here and add more literature}
+\TBD{To do}
 
-\cite{Griffiths2011}
-\cite{Luxburg2007}
-\cite{Cui2007}
-\cite{Niu2010}
-\cite{Niu2011}
-\cite{Niu2012}
-\cite{Qi2009}
-\cite{Davidson2008}
-\cite{Jain2008}
+\section{Simple clustering models}
 
-\section{Binary linear Gaussian model and $k$-means}
+\subsection{Gaussian mixture models and $k$-means}
 
-\subsection{Note}
-
-This correspondence is well known but is usually stated as a correspondence between EM inference in a mixture of Gaussians model and $k$-means.
-This argument should probably come first, and it will make the extension to multiple (\ie not binary) clusters more clear.
-However, this matrix multiplication view might be of passing interest (the notation can certainly be reduced).
-
-\subsection{MAP preliminaries}
-
-Start with a model of the form
+It is well known that there is a correspondence between Gaussian mixture models and the $k$-means algorithm.
+Pr\'ecising the exposition in \cite{Kulis2012}, a Gaussian mixture model assumes that data arises from the following distribution
 \begin{equation}
-\Data_{ij} = (\IBP\Weights)_{ij} + \bias_{j} + \errors_{ij}
+p(x) = \sum_{c=1}^k \pi_c \, \Normal(x \given \mu_c, \Sigma_c).
 \end{equation}
-where $\IBP$ is a binary matrix, $\Weights$ is real valued weight matrix, $\bias$ is a bias vector and $\epsilon$ is a matrix of `errors'.
-We will define priors as we go.
-
-Consider a fairly general independent element prior on the errors with density
+The $k$-means algorithm attempts to optimise the following objective
 \begin{equation}
-p(\errors_{ij}) \propto \exp(-|\errors_{ij}|_\psi)
+\min_{(\ell_c)} \sum_{c=1}^k \sum_{x \in \ell_c} ||x - \mu_c||^2 \quad \textrm{where} \quad \mu_c = \frac{1}{|\ell_c|}\sum_{x \in \ell_c}x.
 \end{equation}
-where $|.|_{\psi}$ is some norm with parameters $\psi$ which in turn may have a prior placed upon them.
+It can be shown that when $\Sigma_c = \sigma I$ and as $\sigma \to 0$, an EM algorithm for the Gaussian mixture model tends towards the $k$-means algorithm, establishing the correspondence.
 
-The log posterior in this model (ignoring dependence on $\psi$ for the moment) can be written as
+\subsection{Binary linear Gaussian models and $k$-means}
+
+We now show a correspondence between a simple probabilistic model for multiple clustering and $k$-means.
+Consider the following model for an array of data
 \begin{equation}
-\log(p(\IBP)) + \log(p(\Weights)) + \log(p(\bias)) - \sum_{ij}|\Data_{ij} - (\IBP\Weights)_{ij} - \bias_j|_\psi.
+\Data_{ij} \sim \Normal((\IBP\Weights)_{ij} + \bias_{j}, \sigma_\Data)
 \end{equation}
-Assuming the prior on $\Weights$ factorises, then the relevant terms for maximising $\Weights_{k:}$ and $\bias$ keeping everything else fixed are
+where $\IBP$ is a binary matrix, $\Weights$ is real valued weight matrix and $\bias$ is a bias vector. This is a variant of a model commonly used to demonstrate the Indian Buffet Process \citep[e.g.][]{Griffiths2011}. The log posterior in this model can be written as
 \begin{equation}
-\log(p(\Weights_{k:})) + \log(p(\bias)) - \sum_{ij} |\Residuals^k_{ij} - \IBP_{ik}\Weights_{kj} - \bias_j|_\psi
+\log(p(\IBP)) + \log(p(\Weights)) + \log(p(\bias)) - \sum_{ij}(\Data_{ij} - (\IBP\Weights)_{ij} - \bias_j)^2.
 \end{equation}
-where we have defined the residuals matrix $\Residuals^k_{ij} = \sum_{m \neq k}\IBP_{im}\Weights_{mj}$.
-
-For initial simplicity, let us assume uniform priors on the log scale (\ie the risky `scale free' priors) for the weights and bias and write their MAP estimators as $\hat{\Weights}_{k:}$ and $\hat{\bias}^k$. We then define MAP centres as
-\begin{eqnarray}
-\centre^k & = & \hat{\Weights}_{k:} + \hat{\bias}^k \\
-\bar{\centre}^k & = & \hat{\bias}^k.
-\end{eqnarray}
-
-\subsection{Equivalence to $k$-means}
-
-We now consider jointly maximising the posterior likelihood over $\Weights_{k:}$, $\bias$ and $\IBP_{:k}$.
-
-Consider minimising
+Assuming uniform priors on the log scale\fTBD{\ie scale free priors}, MAP inference is equivalent to minimising the following sum of squares
 \begin{equation}
-\sum_i||\Residuals^k_{i:} - \IBP_{ik}\hat{\Weights}_{k:} - \hat{\bias}^k||_\psi
+\sum_{i: \IBP_{ik} = 1}||\Residuals^k_{i:} - \centre^k||^2 + \sum_{i: \IBP_{ik} = 0}||\Residuals^k_{i:} - \bar{\centre}^k||^2
 \end{equation}
-where $||.||_\psi$ is an appropriate sum of norms. We can rewrite the objective as
-\begin{equation}
-\sum_{i: \IBP_{ik} = 1}||\Residuals^k_{i:} - \centre^k||_\psi + \sum_{i: \IBP_{ik} = 0}||\Residuals^k_{i:} - \bar{\centre}^k||_\psi.
-\end{equation}
-This is exactly the $k$-means objective for two clusters.
-Performing $k$-means on this problem would now be very similar to \cite{Cui2007}.
+over $\centre^k$ and $\bar{\centre}^k$ where we have defined the residuals matrix $\Residuals^k_{ij} = \Data_{ij} - \sum_{m \neq k}\IBP_{im}\Weights_{mj}$.
+The minimising $\centre$ are simply given by appropriate averages.
+Thus, when jointly optimising over $\IBP_{:k}$ and $\centre$ we recover the $2$-means objective.
 
-\subsection{Making it more Bayesian}
+Therefore a reasonable heuristic for MAP inference in this model is to iteratively perform $2$-means clustering on the matrix of residuals.
 
-Placing Gaussian or similar priors on the weights and bias would lead to a regularised $k$-means in the MAP setting.
-Relevant literature might be \cite{Sun2012}.
+\subsection{Beyond binary clustering}
 
-We could also place a Poisson prior over the number of different clusterings to infer an appropriate number of clusters.
-We might also want some sort of IBP like term to decide if we should add a cluster.
+The Binary linear Gaussian model above is similar to a Gaussian mixture model, but one of the main differences is that the means of the different clusters have an additive structure \ie $\centre_c = \sum_{i=1}^k \centre^k_c$ where $\centre^k_c$ is either $\centre^k$ or $\bar{\centre}^k$.
 
-\subsection{Not just binary matrices}
+This additive structure can clearly be extended to non-binary base clusterings.
+The iterative $2$-means clustering model above simply extends to an iterative $k$-means clustering.
+This is exactly the orthogonal projection algorithm of \cite{Cui2007}.
 
-The binary matrix produces binary clusterings for each view.
-From a clustering point of view, it is simple to see how one can extend to multiple clusterings.
+\subsection{The probabilistic perspective}
 
-\section{Approximating a more sophisticated multiple clustering model}
+By writing down a probabilistic model, we can tweak the algorithm of \cite{Cui2007} by sensible modifications to the likelihood.
+Some simple avenues of enquiry include
+\begin{enumerate}
+\item Placing priors on the base cluster centres to justify regularised $k$-means \citep[e.g.][]{Sun2012}
+\item Infer the number of clusters in each base clustering using the DP mixture model inspired algorithm of \cite{Kulis2012}
+\item Introduce noise scaling parameters for each feature of the data to allow the model to prune out noisy features
+\item Inferring the number of views through an appropriate prior (potentially IBP inspired)
+\end{enumerate}
 
-\citep{Niu2012} introduces a nice Bayesian nonparametric model for multi-view clustering.
-Different clusterings are achieved by the IBP stickiness parameter.
-We could do this.
-We could also do this via an orthogonal projections type method.
-This could actually win in terms of accuracy (orthogonal projections pretty good despite not performing feature selection).
+\section{Improved multi-view clustering through feature selection}
+
+In a complex and multi-faceted data set, one should expect some features to provide contradictory information, and some to just be noisy.
+Thus, a successful algorithm will likely require effective feature selection.
+
+The model of \citep{Niu2012} achieves feature selection through a two parameter IBP prior on views and features.
+The `stickiness' parameter of the prior allows one to influence how different the clusterings should be a priori.
+This could also be achieved via the additive means / residuals method discussed above, but restricting to certain features for each base clustering.
+
+The work of \citep{Niu2012} provides a general framework for producing mutiple probabilistic clusterings with a Gibbs sampling implementation.
+This is not entirely appropriate in the MAP setting necessitated by using a MAP algorithm for the clustering \ie $k$-means.
+However, we can perform MAP inference over the entire model using a search strategy to find the optimal choice of features for each clustering view.
+A good starting point for such search strategies could be \cite{Dy2004}.
+
+\section{Next steps}
+
+\begin{enumerate}
+\item Work out the positioning of this work
+\begin{enumerate}
+\item Are we producing a new multiple clustering algorithm (probably not, $k$-means not the best base algorithm)
+\item Are we demonstrating how to approximate richly structured nonparametric Bayesian models?
+\item Are we extending the work on `nonparametric' $k$-means to multi-view `nonparametric' $k$-means?
+\item Are we doing all of these things?
+\end{enumerate}
+\item Decide upon a first feature selection model to test. Independent $\times$ IBP or additive structure?
+\item Any other connections to be drawn? Change focus of work?
+\end{enumerate}
+
+\section{Experiments}
+
+\section{Discussion and conclusions}
 
 % Bibliography
 
