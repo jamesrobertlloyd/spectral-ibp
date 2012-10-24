@@ -164,7 +164,7 @@ where $\IBP$ is a binary matrix, $\Weights$ is real valued weight matrix and $\b
 \begin{equation}
 \log(p(\IBP)) + \log(p(\Weights)) + \log(p(\bias)) - \sum_{ij}(\Data_{ij} - (\IBP\Weights)_{ij} - \bias_j)^2.
 \end{equation}
-Assuming uniform priors on the log scale\fTBD{\ie scale free priors}, MAP inference is equivalent to minimising the following sum of squares
+Assuming uniform priors on the log scale\fTBD{\ie scale free priors for the weights and bias and a uniform prior on $\IBP$}, MAP inference is equivalent to minimising the following sum of squares
 \begin{equation}
 \sum_{i: \IBP_{ik} = 1}||\Residuals^k_{i:} - \centre^k||^2 + \sum_{i: \IBP_{ik} = 0}||\Residuals^k_{i:} - \bar{\centre}^k||^2
 \end{equation}
@@ -188,9 +188,10 @@ By writing down a probabilistic model, we can tweak the algorithm of \cite{Cui20
 Some simple avenues of enquiry include
 \begin{enumerate}
 \item Placing priors on the base cluster centres to justify regularised $k$-means \citep[e.g.][]{Sun2012}
-\item Infer the number of clusters in each base clustering using the DP mixture model inspired algorithm of \cite{Kulis2012}
+\item Infer the number of clusters in each base clustering using the DP mixture model inspired algorithm of \cite{Kulis2012} (referred to as $\infty$-means below)
 \item Introduce noise scaling parameters for each feature of the data to allow the model to prune out noisy features
 \item Inferring the number of views through an appropriate prior (potentially IBP inspired)
+\item Introducing other IBP prior terms into the optimisation to provide novel forms of regularisation\fTBD{Colorado to work out mathematics}
 \end{enumerate}
 
 \section{Improved multi-view clustering through feature selection}
@@ -217,7 +218,14 @@ A good starting point for such search strategies could be \cite{Dy2004}.
 \item Are we extending the work on `nonparametric' $k$-means to multi-view `nonparametric' $k$-means?
 \item Are we doing all of these things?
 \end{enumerate}
-\item Decide upon a first feature selection model to test. Independent $\times$ IBP or additive structure?
+\item Which models to test and in what order?
+\begin{enumerate}
+\item Regularised or $\infty$-means version of orthogonal projections
+\item $k/\infty$-means base clustering in \cite{Niu2012}
+\item $k/\infty$-means base clustering in an additive version of \cite{Niu2012}
+\item Spectral clustering in \cite{Niu2012}
+\item Any of the above with fast base clustering that handles missing data
+\end{enumerate}
 \item Any other connections to be drawn? Change focus of work?
 \end{enumerate}
 
