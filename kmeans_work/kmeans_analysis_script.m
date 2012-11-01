@@ -1,7 +1,6 @@
 % Test script to perform k-means clusting
 %
 % Author: Colorado Reed
-% load the data
 
 colors = 'krgb';
 shapes='.xo^';
