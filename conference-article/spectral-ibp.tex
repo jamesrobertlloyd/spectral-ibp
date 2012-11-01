@@ -4,6 +4,7 @@
 % Basic packages
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath, amsthm, amssymb, bm}
+\usepackage{bbm}
 \usepackage{verbatim}
 % More fun stuff
 \usepackage{graphicx}%\graphicspath{{figures/}}
@@ -80,12 +81,12 @@ Cambridge University\\
 
 % Document specific notation
 
-\def\IBP{Z}
-\def\Weights{A}
+\def\IBP{\boldsymbol{Z}}
+\def\Weights{\boldsymbol{A}}
 \def\weights{a}
-\def\Data{X}
+\def\Data{\boldsymbol{X}}
 \def\data{x}
-\def\Residuals{\tilde{X}}
+\def\Residuals{\tilde{\boldsymbol{X}}}
 \def\residuals{\tilde{x}}
 \def\Graph{G}
 \def\Adjacency{W}
@@ -93,10 +94,13 @@ Cambridge University\\
 \def\Laplacian{L}
 \def\IBPPrior{\alpha}
 \def\errors{\epsilon}
-\def\bias{b}
-\def\centre{\mu}
+\def\bias{\boldsymbol{b}}
+\def\centre{\boldsymbol{\mu}}
+\def\SigData{\sigma_X}
+\def\sumIBP{m}
 
 \DeclareMathOperator*{\argmin}{\arg\!\min}
+\DeclareMathOperator*{\argmax}{\arg\!\max}
 
 \begin{document}
 
@@ -157,22 +161,127 @@ It can be shown that when $\Sigma_c = \sigma I$ and as $\sigma \to 0$, an EM alg
 
 We now show a correspondence between a simple probabilistic model for multiple clustering and $k$-means.
 Consider the following model for an array of data
-\begin{equation}
-\Data_{ij} \sim \Normal((\IBP\Weights)_{ij} + \bias_{j}, \sigma_\Data)
-\end{equation}
+\begin{align}
+\Data_{nd} \sim \Normal((\IBP\Weights)_{nd} + \bias_{d}, \SigData)
+\end{align}
 where $\IBP$ is a binary matrix, $\Weights$ is real valued weight matrix and $\bias$ is a bias vector. This is a variant of a model commonly used to demonstrate the Indian Buffet Process \citep[e.g.][]{Griffiths2011}. The log posterior in this model can be written as
-\begin{equation}
-\log(p(\IBP)) + \log(p(\Weights)) + \log(p(\bias)) - \sum_{ij}(\Data_{ij} - (\IBP\Weights)_{ij} - \bias_j)^2.
-\end{equation}
-Assuming uniform priors on the log scale\fTBD{\ie scale free priors for the weights and bias and a uniform prior on $\IBP$}, MAP inference is equivalent to minimising the following sum of squares
-\begin{equation}
-\sum_{i: \IBP_{ik} = 1}||\Residuals^k_{i:} - \centre^k||^2 + \sum_{i: \IBP_{ik} = 0}||\Residuals^k_{i:} - \bar{\centre}^k||^2
-\end{equation}
-over $\centre^k$ and $\bar{\centre}^k$ where we have defined the residuals matrix $\Residuals^k_{ij} = \Data_{ij} - \sum_{m \neq k}\IBP_{im}\Weights_{mj}$.
+%
+\begin{align}
+\log(p(\IBP)) + \log(p(\Weights)) + \log(p(\bias)) - \frac{1}{2\SigData^2}\sum_{n,d}(\Data_{nd} - (\IBP\Weights)_{nd} - \bias_d)^2.
+\end{align}
+%
+Assuming uniform priors on the log scale\fTBD{\ie scale free priors for the weights and bias and a uniform prior on $\IBP$}, MAP inference is equivalent to minimising the following sum of squares\fPROBLEM{Not quite equivalent, this assumes a fixed feature assignments $m \neq k$}
+%
+\begin{align}
+\sum_{n: \IBP_{nk} = 1}||\Residuals^k_{n:} - \centre^k||^2 + \sum_{n: \IBP_{nk} = 0}||\Residuals^k_{n:} - \bar{\centre}^k||^2
+\end{align}
+%
+over $\centre^k$ and $\bar{\centre}^k$ where we have defined the residuals matrix 
+\begin{align}
+\Residuals^k_{nd} = \Data_{nd} - \sum_{m \neq k}\IBP_{nm}\Weights_{md}
+\end{align}
+and the cluster centers 
+\begin{align}
+\centre^k &=  \Weights_{k:} + \bias\\
+\bar{\centre}^k &= \bias
+\end{align}
 The minimising $\centre$ are simply given by appropriate averages.
 Thus, when jointly optimising over $\IBP_{:k}$ and $\centre$ we recover the $2$-means objective.
 
 Therefore a reasonable heuristic for MAP inference in this model is to iteratively perform $2$-means clustering on the matrix of residuals.
+
+\subsection{IBP Regularization}
+Rather than assume a log-uniform prior for the binary matrix, we can introduce a form of regularised $2$-means clustering by placing an IBP prior on this matrix:
+\begin{align}
+p([\IBP]|\IBPPrior) &=  \frac{\IBPPrior^{K^+}}{\prod_{i=1}^{2^N-1}K_h!}\text{exp}(-\IBPPrior H_N)\prod_{k=1}^{K^+}\frac{(N-\sumIBP_k)!(\sumIBP_k - 1)!}{N!}
+\end{align}
+where $\sumIBP_k=\sum_n \IBP_{nk}$, $K^+ = \sum_k  \mathbbm{1}_{ \sumIBP_k > 0}$, $K_h$ is the number of features with binary representation (history) $h$\fTBD{Describe histories briefly here} described by \citet{Griffiths2011}, $H_N$ is the $Nth$ harmonic number, and the square brackets around $\IBP$ indicate that the probability of the matrix is computed in \textit{left-ordered form}. With the IBP prior the log posterior becomes:
+%
+\begin{align}
+ \log(p(\IBP, \Weights, \bias|\data)) \propto & - \frac{1}{2\SigData^2} \sum_{n,d}(\Data_{nd} - (\IBP\Weights)_{nd} - \bias_d)^2 \notag \\
+ & + K^+ \log\left(\frac{\IBPPrior}{N!}\right)- \sum_{h=1}^{2^N-1} \log\left(K_h!\right) -\IBPPrior H_N + \sum_{k=1}^{K^+}\log\left((N-\sumIBP_k)!(\sumIBP_k - 1)!\right) \notag \\ 
+ & + \log(p(\Weights)) + \log(p(\bias)).
+\end{align}
+%
+Again, assuming uniform priors on the log scale for the weights and bias terms, and iteratively maximising the posterior for a given $\IBP_{:k}, \Weights_{k:}, \bias$ \fTBD{Need to think more carefully about this bias term} (while fixing $\IBP_{:-k}, \Weights_{-k:}$ |equivalent to assuming a fixed residuals matrix) can be viewed as minimizing the following cost function \fTBD{what if $K^{+}$ changes?}
+%
+\begin{align}
+g(\IBP_{:k}, \Weights_{k:}, \bias) = & \sum_{n: \IBP_{nk} = 1}||\Residuals^k_{n:} - \centre^k||^2 + \sum_{n: \IBP_{nk} = 0}||\Residuals^k_{n:} - \bar{\centre}^k||^2  \notag \\ 
+& - 2\SigData^2 \log\left((N-\sumIBP_k)!(\sumIBP_k - 1)!\right) + 2\SigData^2 \log\left(\sum_{k^{'}=1}^{K^{+}} \mathbbm{1}_{\IBP_{:k^{'}} = \IBP_{:k}}\right)   \label{eq_IBPcostfun}.
+\end{align}
+%
+The first line of the cost function is the SSE term discussed in the previous section while the second line is found by examining the IBP prior dependency on $\IBP_{:,k}$:
+%
+\begin{align}
+\log(p(\IBP|\alpha)) = &  K^+ \log\left(\frac{\IBPPrior}{N!}\right)- \sum_{h=1}^{2^N-1} \log\left(K_h!\right) -\IBPPrior H_N + \sum_{k=1}^{K^+}\log\left((N-\sumIBP_k)!(\sumIBP_k - 1)!\right) \notag 
+\\
+= & - \sum_{h^{*}} \log\left(K_{h^{*}}!\right) - \log\left(\sum_{k^{'}=1}^{K^{+}} \mathbbm{1}_{\IBP_{:k^{'}} = \IBP_{:k}}\right)  \label{eq_strhist}
+\\
+& + \sum_{k^{'} \neq k}^{K^+}\log\left((N-\sumIBP_{k^{'}})!(\sumIBP_{k^{'}}- 1)!\right) +  \log\left((N-\sumIBP_k)!(\sumIBP_k - 1)!\right)
+\\
+& + K^+ \log\left(\frac{\IBPPrior}{N!}\right) -\IBPPrior H_N
+\end{align}
+%
+where $h^{*}$ in Eq.\ \ref{eq_strhist} indicates that the histories are evaluated using $\IBP_{:-k}$. Removing terms that do not depend on $\IBP_{:k}$ yields
+%
+\begin{align}
+- \log\left(\sum_{k^{'}=1}^{K^{+}} \mathbbm{1}_{\IBP_{:k^{'}} = \IBP_{:k}}\right)  +  \log\left((N-\sumIBP_k)!(\sumIBP_k - 1)!\right),
+\end{align} 
+%
+which is the negative of the IBP term in Eq.\ \ref{eq_IBPcostfun} multiplied by $2\SigData^2$. The IBP prior effectively introduces a regularization term that penalises replicated and  balanced feature assignments (indirectly penalising similar features). 
+
+We can minimise $g(\IBP_{:k}, \Weights_{k:}, \bias)$ via a modified 2-means clustering on the matrix of residuals by first noting the $2\SigData^2 \log\left(\sum_{k^{'}=1}^{K^{+}} \mathbbm{1}_{\IBP_{:k^{'}} = \IBP_{:k}}\right) \geq 0$ so that 
+\begin{align}
+g_{lb}(\IBP_{:k}, \Weights_{k:}, \bias) =&~ g(\IBP_{:k}, \Weights_{k:}, \bias) - 2\SigData^2 \log\left(\sum_{k^{'}=1}^{K^{+}} \mathbbm{1}_{\IBP_{:k^{'}} = \IBP_{:k}}\right) \\
+ \leq &~ g(\IBP_{:k}, \Weights_{k:}, \bias) 
+\end{align}
+%
+As in the $k$-means algorithm we have an assignment step in which we assign each element to a cluster and a maximization step in which we optimize the cluster locations. Given the cluster locations, we note that if we knew the optimal $\sumIBP_k$ then $\log\left((N-\sumIBP_k)!(\sumIBP_k - 1)!\right)$ is constant, and we could minimise $g_{lb}$ by assigning the $\sumIBP_k$ observations of $\Residuals^k$ to $\centre^k$ with the largest ``net distance," determined via
+\begin{align}
+||\Residuals^k_{n:} - \bar{\centre}^k||^2 - ||\Residuals^k_{n:} - \centre^k||^2.
+\end{align}
+We show this property in the Appendix. Since we do not know the optimal $\sumIBP_k$, we let $\sumIBP_k = 1,\ldots,N$, minimize $g_{lb}$ with $\sumIBP_k$ fixed, and store the resulting $g_{lb}$ value. If our goal was to minimize $g_{lb}$ then we would select the cluster assignments corresponding to the minimum $g_{lb}$ value obtained across all $m_k$ values.
+
+Instead, we locate the cluster assignments corresponding to the minimum $g$ values using Algorithm \ref{alg1}. On a higher level, this algorithm operates by iteratively checking if the minimum lower bound across all $m_k$ is a tight bound, if it is not, then for the $m_k$ corresponding to the lower bound it finds either the next smallest lower bound or current/previous tight bound (whichever is smallest) and assigns that bound as the minimum for the given $m_k$. This process then rechecks the bounds across all $m_k$, finds the minimum and repeats the above process until the minimum bound across all $m_k$ is tight. In this case, the tight bound will be less than all other [tight] lower bounds and will therefore be the minimum. Searching for the $qth$ smallest lower bound takes exponential time in the size of $q$, however, in the worst case we will only need to perform this search up to $q=K^{+} -1$ since a maximum of $K^{+} -1$ lower bounds will not be tight. In IBP models we expect $K$ to scale  on the order of $\log(N)$ and therefore in the worst case this search technique will scale linearly with the data. (this is a quick/dirty explanation and I'll work on making it more mathematically precise, less verbose, etc)\fTBD{colorado is still working on formal running time of search aspect, though it seems that it will marginally contribute in practice}.
+
+\begin{algorithm}                     			
+\caption{Minimize $g$ via $g_{lb}$}
+\label{alg1}                           
+\begin{algorithmic} 
+    \Require $g_{lb}$ values, distances, and corresponding assignments for each $m_k=1,\ldots,N$
+    \Ensure cluster configuration to minimize $g$
+        \State initialize $minheap$ to an empty priority queue  
+    \For{$m_k = 1,\ldots, N$}
+    \State initialize $lb\_struct_{m_k}$ to a structure with fields $\{ current\_min\_asn, min\_val, min\_type, min\_tight\_bound \}$
+    \State set\_field($lb\_struct_{m_k}$, $min\_val$) $\Leftarrow$ min $g_{lb}$ assignment for $m_k$
+    \State set\_field($lb\_struct_{m_k}$, $min\_val$) $\Leftarrow g_{lb}$ for $m_k$
+    \State set\_field($lb\_struct_{m_k}$, $min\_type$) $\Leftarrow$ ``lower bound"
+    \State add $lb\_struct_{m_k}$ to $minheap$ with $min\_val$ sort-field 
+    \EndFor      
+    
+    \While{get\_field( get\_next($minheap$), $min\_type$) is ``lower bound" }
+    	\State $current\_min\_struct \Leftarrow$ remove\_next($minheap$)
+	\State $current\_min\_asn \Leftarrow$ get\_field($current\_min\_struct$, $current\_min\_asn$)
+	\State $next\_largest\_asn \Leftarrow $ assignment of next largest lower bound for $current\_min\_asn$
+	\State $min\_prev\_asn \Leftarrow$ get\_field($current\_min\_struct$, $min\_tight\_bound$)
+	\State $min\_obs\_asn \Leftarrow \argmin_{x = \{current\_min\_asn, min\_prev\_asn\}} g(x)$ 
+	\If{$g(min\_obs\_asn) \leq g_{lb}(next\_largest\_asn)$}
+		\State set\_field($current\_min\_struct$, $min\_val) \Leftarrow g(min\_obs\_asn)$
+		\State set\_field($current\_min\_struct$, $min\_type) \Leftarrow$ ``exact"
+		\State set\_field($current\_min\_struct$, $current\_min\_asn) \Leftarrow min\_obs\_asn$
+	\Else 
+		\State set\_field($current\_min\_struct$, $min\_val) \Leftarrow g_{lb}(next\_largest\_asn)$
+		\State set\_field($current\_min\_struct$, $min\_tight\_bound) \Leftarrow min\_obs\_asn$
+		\State set\_field($current\_min\_struct$, $current\_min\_asn) \Leftarrow next\_largest\_asn$
+	\EndIf
+
+	\State add $current\_min\_struct$ to $minheap$ with $min\_val$ sort-field 
+    \EndWhile
+    \State $min\_struct \Leftarrow$ remove\_next($minheap$)
+  \State $min\_g\_asn \Leftarrow$ get\_field($min\_struct$, $min\_asn$)
+    \State \Return $min\_g\_asn$
+\end{algorithmic}
+\end{algorithm}
 
 \subsection{Beyond binary clustering}
 
@@ -203,7 +312,7 @@ The model of \citep{Niu2012} achieves feature selection through a two parameter 
 The `stickiness' parameter of the prior allows one to influence how different the clusterings should be a priori.
 This could also be achieved via the additive means / residuals method discussed above, but restricting to certain features for each base clustering.
 
-The work of \citep{Niu2012} provides a general framework for producing mutiple probabilistic clusterings with a Gibbs sampling implementation.
+The work of \citep{Niu2012} provides a general framework for producing multiple probabilistic clusterings with a Gibbs sampling implementation.
 This is not entirely appropriate in the MAP setting necessitated by using a MAP algorithm for the clustering \ie $k$-means.
 However, we can perform MAP inference over the entire model using a search strategy to find the optimal choice of features for each clustering view.
 A good starting point for such search strategies could be \cite{Dy2004}.
@@ -241,5 +350,27 @@ A good starting point for such search strategies could be \cite{Dy2004}.
 %\bibliographystyle{icml2013}
 \bibliography{library}
 }
+
+\appendix
+\section{2-means clustering with given cluster sizes}
+Given a set of data points $\mathcal{V}$, two cluster centers $\mu_1,\mu_2$ for clusters $c_1$ and $c_2$, respectively and the constraint $|c_1|=m$, we can construct the following 2-means objective:
+\begin{align}
+& \argmin_{c_1}\sum_{p \in c_1} d_1(p) + \sum_{p \notin c_1} d_2(p) \\
+\end{align}
+subject to $|c_1|=m$, where $d_i$ represents the distance from cluster center $\mu_i \in \{1,2\}$. This objective can be rewritten as
+\begin{align}
+ \argmin_{c_1} \sum_{p \in \mathcal{V}} d_2(p) - \sum_{p \in c_1}\left[ d_2(p) - d_1(p) \right]
+\end{align}
+and since the first term is constant this is equivalent to
+\begin{align}
+ \argmax_{c_1}\sum_{p \in c_1}\left[ d_2(p) - d_1(p) \right]
+\end{align}
+and by letting $d_{21} = d_2(p) - d_1(p)$ we have
+\begin{align}
+\label{eq_finalresc}
+ \argmax_{c_1} \sum_{p \in c_1}d_{21}(p).
+\end{align}
+To maximize Eq.\ \ref{eq_finalresc} subject to $|c_1|=m$ we simply evaluate $d_{21}(p)$ for all $p \in \mathcal{V}$ and select the largest $m$ data points for $c_1$.
+
 
 \end{document}

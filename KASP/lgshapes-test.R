@@ -45,7 +45,7 @@ calc.llhood <- function(X, Z, K, sigX, sigA){
 }
 
 # load needed packages
-source('KASP-JL.R')
+# source('KASP-JL.R')
 
 # initialization
 trainF = 4/5
